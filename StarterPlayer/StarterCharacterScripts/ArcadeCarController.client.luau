@@ -13,7 +13,6 @@ for _, oldScript in ipairs(script.Parent:GetChildren()) do
 end
 
 local character = script.Parent
-local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 local camera = workspace.CurrentCamera
 local localPlayer = Players.LocalPlayer
@@ -120,63 +119,21 @@ local lastHighBeamState = false
 -- ============================================================================
 -- 🔄 MASTER RESTART RESET AGENT
 -- ============================================================================
--- ============================================================================
--- CORRECTED ROUTINE: game.StarterPlayer.StarterCharacterScripts.ArcadeCarController
--- LOCATION: GameOver Attribute Listener
--- ============================================================================
--- ============================================================================
--- ADD THIS TO ArcadeCarController (anywhere in the main body)
--- ============================================================================
--- ============================================================================
--- FIX: game.StarterPlayer.StarterCharacterScripts.ArcadeCarController
--- REPLACE the existing character:GetAttributeChangedSignal("InMenu") block with this:
--- ============================================================================
--- ============================================================================
--- FIX: Centralized State Controller
--- REPLACE your existing InMenu and GameOver listeners with this block:
--- ============================================================================
-
-local function setPhysicsState(isFrozen)
-	if isFrozen then
-		-- Freeze everything
-		rootPart.Anchored = true
-		rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-		rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-		for _, part in ipairs(character:GetDescendants()) do
-			if part:IsA("BasePart") then
-				part.CanCollide = false
-				part.LocalTransparencyModifier = 1 -- Hide visually
-			end
-		end
-	else
-		-- Unfreeze everything
-		rootPart.Anchored = false
-		humanoid.PlatformStand = false
-		humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-
-		for _, part in ipairs(character:GetDescendants()) do
-			if part:IsA("BasePart") then
-				part.CanCollide = true -- Enable collisions
-				part.LocalTransparencyModifier = 0 -- Show visually
-			end
-		end
-	end
-end
-
--- Listener for Menu
-character:GetAttributeChangedSignal("InMenu"):Connect(function()
-	local isMenu = character:GetAttribute("InMenu")
-	setPhysicsState(isMenu == true)
-end)
-
--- Listener for Game Over
 character:GetAttributeChangedSignal("GameOver"):Connect(function()
-	local isOver = character:GetAttribute("GameOver")
-	setPhysicsState(isOver == true)
-end)
+	if character:GetAttribute("GameOver") == false and character:GetAttribute("InMenu") == false then
+		lives = 3
+		CURRENT_FORWARD_SPEED = BASE_FORWARD_SPEED
+		score = 0
+		scoreTimer = 0
+		currentMultiplier = 1.0
+		multiplierExpiration = 0
+		isInvincible = false
+		passedCars = {}
+		table.clear(recentNearMisses)
 
--- Initial State Force
-setPhysicsState(character:GetAttribute("InMenu") == true or character:GetAttribute("GameOver") == true)
+		print("🔄 ArcadeCarController: Engine reinitialized for a live restart!")
+	end
+end)
 
 -- ============================================================================
 -- 💔 LOSS CONDITION DEDUCTION PIPELINES
@@ -256,23 +213,23 @@ local function triggerHit()
 		local duration = 1.5
 		local flashFrequency = 0.1
 		local elapsed = 0
-
+		
 		while elapsed < duration do
 			if lives <= 0 or character:GetAttribute("GameOver") == true then break end
-
+			
 			-- Toggle transparency fields to create visual blinking indicator feedback
 			local currentModifierValue = (math.floor(elapsed / flashFrequency) % 2 == 0) and 0.6 or 0
-
+			
 			for _, part in ipairs(character:GetDescendants()) do
 				if part:IsA("BasePart") then 
 					part.LocalTransparencyModifier = currentModifierValue 
 					part.CanCollide = false -- Explicitly strip collisions every frame during recovery
 				end
 			end
-
+			
 			elapsed = elapsed + task.wait()
 		end
-
+		
 		-- Clean recovery wrap up state
 		if lives > 0 and character:GetAttribute("GameOver") ~= true then
 			for _, part in ipairs(character:GetDescendants()) do
