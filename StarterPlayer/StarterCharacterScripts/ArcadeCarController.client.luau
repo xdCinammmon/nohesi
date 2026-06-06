@@ -123,6 +123,22 @@ local lastHighBeamState = false
 -- CORRECTED ROUTINE: game.StarterPlayer.StarterCharacterScripts.ArcadeCarController
 -- LOCATION: GameOver Attribute Listener
 -- ============================================================================
+-- ============================================================================
+-- ADD THIS TO ArcadeCarController (anywhere in the main body)
+-- ============================================================================
+character:GetAttributeChangedSignal("InMenu"):Connect(function()
+	if character:GetAttribute("InMenu") == true then
+		-- Force-clear any local physics flags
+		rootPart.Anchored = true
+		rootPart.CFrame = CFrame.new(0, 10000, 0)
+
+		for _, part in ipairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+	end
+end)
 character:GetAttributeChangedSignal("GameOver"):Connect(function()
 	if character:GetAttribute("GameOver") == true then
 		-- 🟢 FIX: Mimic "Pause" physics behavior to stop the fall

@@ -760,36 +760,46 @@ end)
 -- LOCATION: backToGarageBtn.MouseButton1Click
 -- ============================================================================
 backToGarageBtn.MouseButton1Click:Connect(function()
-	-- 1. Reset all state flags cleanly
 	local character = localPlayer.Character
-	if character then
-		character:SetAttribute("GameOver", false) 
-		character:SetAttribute("InMenu", true) -- Return to menu logic
-		character:SetAttribute("IsPaused", false)
+	if not character then return end
 
-		-- Clear physics lock if it was stuck
-		local root = character:FindFirstChild("HumanoidRootPart")
-		if root then root.Anchored = false end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+	-- 🟢 FIX: THE "SAFE-ZONE" TELEPORT
+	-- Move the character to an empty region (10,000 studs away) so physics cannot collide with anything
+	if root then
+		root.CFrame = CFrame.new(0, 10000, 0) 
+		root.Anchored = true
+		root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+		root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
 	end
 
-	-- 2. Hide result screens
+	-- 🟢 FIX: DISABLE PHYSICS INTERACTIONS
+	if humanoid then
+		humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+		humanoid.PlatformStand = true
+	end
+
+	-- 🟢 FIX: DESTRUCTION ORDER
+	local equippedVehicle = character:FindFirstChild("EquippedVehicleBody")
+	if equippedVehicle then equippedVehicle:Destroy() end
+
+	-- Update UI and State
+	character:SetAttribute("GameOver", false)
+	character:SetAttribute("InMenu", true)
+	character:SetAttribute("IsPaused", false)
+
 	resultScreen.Visible = false
 	studioGameplayHUD.Enabled = false
 	screenGui.Enabled = false
 
-	-- 3. Transition Camera & UI
 	local mainMenuGui = localPlayer.PlayerGui:FindFirstChild("MainMenuGUI")
 	if mainMenuGui then
 		mainMenuGui.Enabled = true
 	end
 
 	workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
-
-	-- 4. Final Cleanup: Destroy physics assembly to prevent ghost-collisions
-	if character then
-		local equippedVehicle = character:FindFirstChild("EquippedVehicleBody")
-		if equippedVehicle then equippedVehicle:Destroy() end
-	end
 end)
 
 localPlayer.CharacterAdded:Connect(bindCharacterAttributes)
