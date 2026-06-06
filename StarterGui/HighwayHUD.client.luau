@@ -681,31 +681,38 @@ end
 -- ============================================================================
 -- ⏸️ PAUSE MODAL SELECTION LOGIC BINDINGS
 -- ============================================================================
+-- ============================================================================
+-- MODIFIED ROUTINE: game.StarterGui.HighwayHUD
+-- LOCATION: Pause/Unpause Button Connections
+-- ============================================================================
 pauseBtn.MouseButton1Click:Connect(function()
 	local character = localPlayer.Character
 	if not character or character:GetAttribute("InMenu") == true or character:GetAttribute("GameOver") == true then return end
 
 	character:SetAttribute("IsPaused", true)
+	-- 🟢 NEW: Tell the server we paused so other players see us disappear
+	if ReplicatedStorage:FindFirstChild("ToggleLights") then
+		ReplicatedStorage.ToggleLights:FireServer("IsPaused", true)
+	end
+
 	pauseMenuOverlay.Visible = true
 	TweenService:Create(pauseMenuOverlay, TweenInfo.new(0.2), {BackgroundTransparency = 0.4}):Play()
 end)
 
--- ============================================================================
--- CORRECTED ROUTINE: game.StarterGui.HighwayHUD
--- LOCATION: continueRunBtn Input Bindings (Lines 324+)
--- ============================================================================
 continueRunBtn.MouseButton1Click:Connect(function()
 	local character = localPlayer.Character
 	if character then 
 		character:SetAttribute("IsPaused", false) 
+		-- 🟢 NEW: Tell the server we unpaused so we materialize back in the race
+		if ReplicatedStorage:FindFirstChild("ToggleLights") then
+			ReplicatedStorage.ToggleLights:FireServer("IsPaused", false)
+		end
 	end
 
-	-- 🟢 FIX: Explicitly drop transparency layers smoothly then adjust focus elements
-	TweenService:Create(pauseMenuOverlay, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
+	TweenService:Create(pauseMenuOverlay, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
 
 	task.delay(0.15, function() 
 		pauseMenuOverlay.Visible = false 
-		-- Re-ensure underlying screen inputs clear back into active 3D view layers
 		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 	end)
 end)
@@ -748,26 +755,41 @@ restartBtn.MouseButton1Click:Connect(function()
 	RequestVehicleSpawn:FireServer(equippedCarId)
 end)
 
+-- ============================================================================
+-- CORRECTED ROUTINE: game.StarterGui.HighwayHUD
+-- LOCATION: backToGarageBtn.MouseButton1Click
+-- ============================================================================
 backToGarageBtn.MouseButton1Click:Connect(function()
+	-- 1. Reset all state flags cleanly
+	local character = localPlayer.Character
+	if character then
+		character:SetAttribute("GameOver", false) 
+		character:SetAttribute("InMenu", true) -- Return to menu logic
+		character:SetAttribute("IsPaused", false)
+
+		-- Clear physics lock if it was stuck
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if root then root.Anchored = false end
+	end
+
+	-- 2. Hide result screens
 	resultScreen.Visible = false
 	studioGameplayHUD.Enabled = false
 	screenGui.Enabled = false
 
-	local character = localPlayer.Character
-	if character then
-		character:SetAttribute("InMenu", true)
-		character:SetAttribute("GameOver", false) 
-		character:SetAttribute("IsPaused", false)
-
-		local equippedVehicle = character:FindFirstChild("EquippedVehicleBody")
-		if equippedVehicle then equippedVehicle:Destroy() end
-	end
-
-	local mainMenuGui = localPlayer.PlayerGui:FindFirstChild("MainMenuGui")
+	-- 3. Transition Camera & UI
+	local mainMenuGui = localPlayer.PlayerGui:FindFirstChild("MainMenuGUI")
 	if mainMenuGui then
 		mainMenuGui.Enabled = true
 	end
+
 	workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+
+	-- 4. Final Cleanup: Destroy physics assembly to prevent ghost-collisions
+	if character then
+		local equippedVehicle = character:FindFirstChild("EquippedVehicleBody")
+		if equippedVehicle then equippedVehicle:Destroy() end
+	end
 end)
 
 localPlayer.CharacterAdded:Connect(bindCharacterAttributes)

@@ -119,54 +119,51 @@ local lastHighBeamState = false
 -- ============================================================================
 -- 🔄 MASTER RESTART RESET AGENT
 -- ============================================================================
+-- ============================================================================
+-- CORRECTED ROUTINE: game.StarterPlayer.StarterCharacterScripts.ArcadeCarController
+-- LOCATION: GameOver Attribute Listener
+-- ============================================================================
 character:GetAttributeChangedSignal("GameOver"):Connect(function()
-	if character:GetAttribute("GameOver") == false and character:GetAttribute("InMenu") == false then
-		lives = 3
-		CURRENT_FORWARD_SPEED = BASE_FORWARD_SPEED
-		score = 0
-		scoreTimer = 0
-		currentMultiplier = 1.0
-		multiplierExpiration = 0
-		isInvincible = false
-		passedCars = {}
-		table.clear(recentNearMisses)
+	if character:GetAttribute("GameOver") == true then
+		-- 🟢 FIX: Mimic "Pause" physics behavior to stop the fall
+		rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+		rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+		rootPart.Anchored = true -- Force lock position so it cannot fall
 
-		print("🔄 ArcadeCarController: Engine reinitialized for a live restart!")
+		-- Make invisible like the pause state
+		for _, part in ipairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.LocalTransparencyModifier = 1
+				part.CanCollide = false
+			end
+		end
+	else
+		-- Logic for restart: re-anchor and re-materialize
+		rootPart.Anchored = false
+		-- Reset transparency handled by spawn logic
 	end
 end)
 
 -- ============================================================================
 -- 💔 LOSS CONDITION DEDUCTION PIPELINES
 -- ============================================================================
+-- ============================================================================
+-- CORRECTED ROUTINE: game.StarterPlayer.StarterCharacterScripts.ArcadeCarController
+-- LOCATION: State Deductions Matrix inside triggerHit()
+-- ============================================================================
 local function triggerHit()
-	-- ============================================================================
-	-- CORRECTED ROUTINE: game.StarterPlayer.StarterCharacterScripts.ArcadeCarController
-	-- LOCATION: Loss Condition Branch inside triggerHit()
-	-- ============================================================================
-	if lives <= 0 then
-		CURRENT_FORWARD_SPEED = 0
-		character:SetAttribute("CurrentSpeed", 0)
-		character:SetAttribute("GameOver", true)
-		-- 🟢 FIX: REMOVED character:SetAttribute("InMenu", true) from here!
-		-- This allows HighwayHUD to remain awake and cleanly animate your score panels.
-
-		print("🛑 RUN OUT OF LIVES: Transmitting scores to account servers...")
-
-		task.spawn(function()
-			local success, resultMessage = ProcessRunResolution:InvokeServer("Endless", math.floor(score), false)
-			print(resultMessage)
-		end)
-		return
-	end
+	-- 🟢 FIX 1: IMMEDIATE GATEKEEPER FENCE
+	-- Stops any multi-frame or rapid-succession hits from executing during the active flashing window
+	if isInvincible or lives <= 0 then return end
+	isInvincible = true -- Instantly close the gate before any processing logic yields execution threads
 
 	local currentMode = character:GetAttribute("GameMode") or "Solo"
 
 	-- 🌐 MULTIPLAYER FREEPLAY RULES (With combo clean alerts added)
 	if currentMode == "Multiplayer" then
-		isInvincible = true
 		CURRENT_FORWARD_SPEED = MIN_SPEED 
 
-		-- ✨ Wipes current score multiplier and alerts HUD framework to clear combo popups
+		-- Wipes current score multiplier and alerts HUD framework to clear combo popups
 		if currentMultiplier > 1.0 then
 			currentMultiplier = 1.0
 			character:SetAttribute("CurrentMultiplier", currentMultiplier)
@@ -191,7 +188,7 @@ local function triggerHit()
 	end
 
 	-- 🕹️ SOLO ENDLESS MODE RULES
-	isInvincible = true
+	-- 🟢 FIX 2: STRICT SEPARATION OF STATE DEDUCTION
 	lives = lives - 1
 	character:SetAttribute("Lives", lives)
 	CURRENT_FORWARD_SPEED = MIN_SPEED
@@ -218,18 +215,40 @@ local function triggerHit()
 		return
 	end
 
+	-- 🟢 FIX 3: BULLETPROOF RECOVERY PROFILE
+	-- Extends the invincibility window and forces transparency modifier updates safely
 	task.spawn(function()
-		for i = 1, 8 do
+		-- 1.5 seconds of absolute collision immunity to allow the chassis to pass entirely through the obstacle
+		local duration = 1.5
+		local flashFrequency = 0.1
+		local elapsed = 0
+
+		while elapsed < duration do
+			if lives <= 0 or character:GetAttribute("GameOver") == true then break end
+
+			-- Toggle transparency fields to create visual blinking indicator feedback
+			local currentModifierValue = (math.floor(elapsed / flashFrequency) % 2 == 0) and 0.6 or 0
+
 			for _, part in ipairs(character:GetDescendants()) do
-				if part:IsA("BasePart") then part.LocalTransparencyModifier = 0.6 end
+				if part:IsA("BasePart") then 
+					part.LocalTransparencyModifier = currentModifierValue 
+					part.CanCollide = false -- Explicitly strip collisions every frame during recovery
+				end
 			end
-			task.wait(0.12)
-			for _, part in ipairs(character:GetDescendants()) do
-				if part:IsA("BasePart") then part.LocalTransparencyModifier = 0 end
-			end
-			task.wait(0.12)
+
+			elapsed = elapsed + task.wait()
 		end
-		isInvincible = false
+
+		-- Clean recovery wrap up state
+		if lives > 0 and character:GetAttribute("GameOver") ~= true then
+			for _, part in ipairs(character:GetDescendants()) do
+				if part:IsA("BasePart") then 
+					part.LocalTransparencyModifier = 0 
+				end
+			end
+			isInvincible = false -- Open the hit validation gate again safely
+			print("🛡️ Invincibility window expired cleanly. Core hit tracking active.")
+		end
 	end)
 end
 

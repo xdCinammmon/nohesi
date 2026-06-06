@@ -42,6 +42,10 @@ local function updatePlayerTags(otherPlayer)
 		local label = currentTag:WaitForChild("TagLabel")
 
 		local connection
+		-- ============================================================================
+		-- UPGRADED ROUTINE: game.StarterPlayer.StarterPlayerScripts.PlayerModeManager
+		-- LOCATION: RenderStepped Competitor Sync Layer (Lines 40+)
+		-- ============================================================================
 		connection = RunService.RenderStepped:Connect(function()
 			if not localPlayer.Character or not otherChar.Parent or not otherRoot.Parent then
 				connection:Disconnect()
@@ -50,8 +54,24 @@ local function updatePlayerTags(otherPlayer)
 			end
 
 			local theirMode = otherChar:GetAttribute("GameMode") or "Solo"
-			local displayModeName = (theirMode == "Solo") and "ENDLESS" or "FREEPLAY"
+			local isPeerPaused = otherChar:GetAttribute("IsPaused") or false
 
+			-- 🟢 NEW: PHANTOM STATE REPLICATION EVALUATION
+			if isPeerPaused then
+				currentTag.Enabled = false -- Hide overhead name tag completely
+
+				for _, part in ipairs(otherChar:GetDescendants()) do
+					if part:IsA("BasePart") then
+						part.LocalTransparencyModifier = 1 -- Dissolve mesh to invisible
+						part.CanCollide = false            -- Defuse physical collision geometry
+					end
+				end
+				return -- Halt opponent translation sequence tracking while they are paused
+			else
+				currentTag.Enabled = true
+			end
+
+			local displayModeName = (theirMode == "Solo") and "ENDLESS" or "FREEPLAY"
 			label.Text = string.format("%s | %s", otherPlayer.Name, displayModeName)
 
 			-- 🎨 Color assignments match active team states cleanly
@@ -61,7 +81,7 @@ local function updatePlayerTags(otherPlayer)
 				label.TextColor3 = Color3.fromRGB(255, 200, 0)  -- Endless gold
 			end
 
-			-- Ensure all players remain solid and visible on the road together!
+			-- Ensure all non-paused active players remain solid and visible on the road
 			for _, part in ipairs(otherChar:GetDescendants()) do
 				if part:IsA("BasePart") then
 					part.LocalTransparencyModifier = 0
