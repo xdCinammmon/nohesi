@@ -1,0 +1,1 @@
+{"attributes":[],"className":"WeldConstraint","properties":{"Part0":{"path":"ServerStorage.failedtest.RightBrakeLight","_t":"Ref","name":"RightBrakeLight"},"Part1":{"path":"ServerStorage.failedtest.HumanoidRootPart","_t":"Ref","name":"HumanoidRootPart"},"Enabled":true}}

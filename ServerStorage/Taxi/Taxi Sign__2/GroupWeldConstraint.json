@@ -1,0 +1,1 @@
+{"attributes":[],"className":"WeldConstraint","properties":{"Part0":{"path":"StarterPlayer.StarterCharacter.HumanoidRootPart","_t":"Ref","name":"HumanoidRootPart"},"Part1":{"path":"ServerStorage.Taxi.Taxi Sign","_t":"Ref","name":"Taxi Sign"},"Enabled":true}}

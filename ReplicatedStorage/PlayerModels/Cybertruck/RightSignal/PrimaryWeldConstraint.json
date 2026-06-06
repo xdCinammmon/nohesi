@@ -1,0 +1,1 @@
+{"attributes":[],"className":"WeldConstraint","properties":{"Part0":{"path":"ReplicatedStorage.PlayerModels.Cybertruck.Main","_t":"Ref","name":"Main"},"Part1":{"path":"ReplicatedStorage.PlayerModels.Cybertruck.RightSignal","_t":"Ref","name":"RightSignal"},"Enabled":true}}

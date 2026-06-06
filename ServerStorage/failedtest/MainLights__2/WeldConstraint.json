@@ -1,0 +1,1 @@
+{"attributes":[],"className":"WeldConstraint","properties":{"Part0":{"path":"ServerStorage.failedtest.MainLights","_t":"Ref","name":"MainLights"},"Part1":{"path":"ServerStorage.failedtest.HumanoidRootPart","_t":"Ref","name":"HumanoidRootPart"},"Enabled":true}}

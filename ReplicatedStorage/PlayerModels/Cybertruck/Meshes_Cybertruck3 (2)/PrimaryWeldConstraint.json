@@ -1,0 +1,1 @@
+{"attributes":[],"className":"WeldConstraint","properties":{"Part0":{"path":"ReplicatedStorage.PlayerModels.Cybertruck.Main","_t":"Ref","name":"Main"},"Part1":{"path":"ReplicatedStorage.PlayerModels.Cybertruck.Meshes/Cybertruck3 (2)","_t":"Ref","name":"Meshes/Cybertruck3 (2)"},"Enabled":true}}

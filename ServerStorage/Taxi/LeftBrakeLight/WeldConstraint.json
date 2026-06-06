@@ -1,0 +1,1 @@
+{"attributes":[],"className":"WeldConstraint","properties":{"Part0":{"path":"ServerStorage.Taxi.LeftBrakeLight","_t":"Ref","name":"LeftBrakeLight"},"Part1":{"path":"StarterPlayer.StarterCharacter.HumanoidRootPart","_t":"Ref","name":"HumanoidRootPart"},"Enabled":true}}

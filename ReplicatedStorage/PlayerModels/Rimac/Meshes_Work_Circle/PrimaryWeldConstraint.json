@@ -1,0 +1,1 @@
+{"attributes":[],"className":"WeldConstraint","properties":{"Part0":{"path":"ReplicatedStorage.PlayerModels.Rimac.Meshes/Rimac_Plane","_t":"Ref","name":"Meshes/Rimac_Plane"},"Part1":{"path":"ReplicatedStorage.PlayerModels.Rimac.Meshes/Work_Circle","_t":"Ref","name":"Meshes/Work_Circle"},"Enabled":true}}

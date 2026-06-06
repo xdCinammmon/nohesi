@@ -1,0 +1,1 @@
+{"attributes":[],"className":"UIStroke","properties":{"ApplyStrokeMode":{"et":"ApplyStrokeMode","_t":"Enum","n":"Contextual"},"Transparency":0,"Color":{"b":0,"g":0,"_t":"Color3","r":0},"LineJoinMode":{"et":"LineJoinMode","_t":"Enum","n":"Round"},"Thickness":1.899999976158142},"name":"UIStroke"}
