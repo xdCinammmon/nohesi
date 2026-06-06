@@ -13,6 +13,7 @@ for _, oldScript in ipairs(script.Parent:GetChildren()) do
 end
 
 local character = script.Parent
+local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 local camera = workspace.CurrentCamera
 local localPlayer = Players.LocalPlayer
@@ -126,39 +127,56 @@ local lastHighBeamState = false
 -- ============================================================================
 -- ADD THIS TO ArcadeCarController (anywhere in the main body)
 -- ============================================================================
-character:GetAttributeChangedSignal("InMenu"):Connect(function()
-	if character:GetAttribute("InMenu") == true then
-		-- Force-clear any local physics flags
-		rootPart.Anchored = true
-		rootPart.CFrame = CFrame.new(0, 10000, 0)
+-- ============================================================================
+-- FIX: game.StarterPlayer.StarterCharacterScripts.ArcadeCarController
+-- REPLACE the existing character:GetAttributeChangedSignal("InMenu") block with this:
+-- ============================================================================
+-- ============================================================================
+-- FIX: Centralized State Controller
+-- REPLACE your existing InMenu and GameOver listeners with this block:
+-- ============================================================================
 
-		for _, part in ipairs(character:GetDescendants()) do
-			if part:IsA("BasePart") then
-				part.CanCollide = false
-			end
-		end
-	end
-end)
-character:GetAttributeChangedSignal("GameOver"):Connect(function()
-	if character:GetAttribute("GameOver") == true then
-		-- 🟢 FIX: Mimic "Pause" physics behavior to stop the fall
+local function setPhysicsState(isFrozen)
+	if isFrozen then
+		-- Freeze everything
+		rootPart.Anchored = true
 		rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 		rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-		rootPart.Anchored = true -- Force lock position so it cannot fall
-
-		-- Make invisible like the pause state
 		for _, part in ipairs(character:GetDescendants()) do
 			if part:IsA("BasePart") then
-				part.LocalTransparencyModifier = 1
 				part.CanCollide = false
+				part.LocalTransparencyModifier = 1 -- Hide visually
 			end
 		end
 	else
-		-- Logic for restart: re-anchor and re-materialize
+		-- Unfreeze everything
 		rootPart.Anchored = false
-		-- Reset transparency handled by spawn logic
+		humanoid.PlatformStand = false
+		humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+
+		for _, part in ipairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = true -- Enable collisions
+				part.LocalTransparencyModifier = 0 -- Show visually
+			end
+		end
 	end
+end
+
+-- Listener for Menu
+character:GetAttributeChangedSignal("InMenu"):Connect(function()
+	local isMenu = character:GetAttribute("InMenu")
+	setPhysicsState(isMenu == true)
 end)
+
+-- Listener for Game Over
+character:GetAttributeChangedSignal("GameOver"):Connect(function()
+	local isOver = character:GetAttribute("GameOver")
+	setPhysicsState(isOver == true)
+end)
+
+-- Initial State Force
+setPhysicsState(character:GetAttribute("InMenu") == true or character:GetAttribute("GameOver") == true)
 
 -- ============================================================================
 -- 💔 LOSS CONDITION DEDUCTION PIPELINES

@@ -111,39 +111,38 @@ Players.PlayerAdded:Connect(function(player)
 end)
 
 -- 📥 INBOUND NETWORK GATES: FIRE UPON MAIN MENU SPAWN OR RESTART BUTTON CLICKS
+-- ============================================================================
+-- CORRECTED ROUTINE: game.ServerScriptService.PlayerVehicleSpawner
+-- LOCATION: RequestVehicleSpawn.OnServerEvent block
+-- ============================================================================
 RequestVehicleSpawn.OnServerEvent:Connect(function(player, selectedCarId)
 	local character = player.Character
 	if character and character:FindFirstChild("HumanoidRootPart") then
 		local rootPart = character.HumanoidRootPart
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
 
-		-- 1. Apply selection identity parameters
-		player:SetAttribute("EquippedCar", selectedCarId)
-
-		-- 2. Terminate main menu state to switch game loop mechanics on
-		character:SetAttribute("InMenu", false)
-
-		-- 3. ✨ NEW: SERVER-SIDE GEOMETRIC POSITIONING ROUTER GATES
-		-- Evaluates mode parameters to clear out old crash momentum references perfectly
-		local currentMode = character:GetAttribute("GameMode") or "Solo"
-
-		if currentMode == "Solo" then
-			-- Reset structural physics forces before resetting coordinates
-			rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-			rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-			rootPart.CFrame = SOLO_START_CFRAME
-
-			print("🕹️ Spawner Lane Routing: Isolated Solo Track active for " .. player.Name)
-		elseif currentMode == "Multiplayer" then
-			rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-			rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-			rootPart.CFrame = MULTIPLAYER_START_CFRAME
-
-			print("🌐 Spawner Lane Routing: Public Freeplay Lobby active for " .. player.Name)
+		-- 🟢 FIX: THE "HARD-RESET"
+		-- 1. Un-anchor and reset physics state before doing ANYTHING else
+		rootPart.Anchored = false
+		if humanoid then
+			humanoid.PlatformStand = false
+			humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
 		end
 
-		-- 4. Instantly build the chosen vehicle chassis onto the tracking skeleton frame
+		-- 2. Set the position to the start frame BEFORE spawning the car
+		local currentMode = character:GetAttribute("GameMode") or "Solo"
+		local spawnCFrame = (currentMode == "Multiplayer") and MULTIPLAYER_START_CFRAME or SOLO_START_CFRAME
+
+		rootPart.CFrame = spawnCFrame
+		rootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+		rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+
+		-- 3. Transition UI State
+		character:SetAttribute("InMenu", false)
+
+		-- 4. Build the vehicle
 		attachVehicleBody(player, character)
 
-		print("🚀 Vehicle spawn processing complete for: " .. player.Name .. " -> " .. selectedCarId .. " [" .. currentMode .. "]")
+		print("🚀 Vehicle spawn successfully forced into physical world for: " .. player.Name)
 	end
 end)
