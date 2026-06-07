@@ -1,14 +1,19 @@
-local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
+local CollectionService = game:GetService("CollectionService")
 
 local function updateAllLights()
-	-- Determine if it's night
+	-- Debugging the ClockTime and the boolean state
 	local isNight = (Lighting.ClockTime >= 17 or Lighting.ClockTime < 7)
 
-	-- Get all tagged objects
-	for _, lightBlock in pairs(CollectionService:GetTagged("TrafficLight")) do
-		-- Handle logic
-		local surfaceLight = lightBlock:FindFirstChildWhichIsA("SurfaceLight")
+	print("--- Light Sync Debug ---")
+	print("Current ClockTime: " .. tostring(Lighting.ClockTime))
+	print("Is it Night? " .. tostring(isNight))
+
+	local taggedLights = CollectionService:GetTagged("TrafficLamp")
+	print("Found " .. #taggedLights .. " lights to update.")
+
+	for _, lightBlock in pairs(taggedLights) do
+		local surfaceLight = lightBlock:FindFirstChildWhichIsA("SurfaceLight", true)
 
 		if surfaceLight then
 			surfaceLight.Enabled = isNight
